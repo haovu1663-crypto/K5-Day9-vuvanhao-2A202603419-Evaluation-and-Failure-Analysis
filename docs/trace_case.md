@@ -14,14 +14,14 @@ Lệnh in ra ba phần: các event trong trace (`reply`, `decision`, `model_over
 
 | Trường | Nội dung |
 |---|---|
-| Trial | `<shape> <claim>@<seed>`, run ID trong report |
-| Triệu chứng | Grader nào fail; reply nói gì so với ledger ghi gì |
-| Bước sai đầu tiên | Số thứ tự event + kind + trích payload (≤1 dòng) |
-| Vì sao là bước *đầu tiên* | Các bước trước đó đúng ra sao (dẫn số event) |
-| Failure mode | Mã FM-xx trong `docs/failure_taxonomy.md` |
-| Đối chứng | Cùng claim@seed trên shape `fixed`: bước đó khác thế nào |
-| Regression test | Tên test + grader/assert nào bắt được; đã thấy fail trên variant lỗi và pass trên `fixed` chưa |
-| Chưa chắc chắn | Điều trace không chứng minh được |
+| Trial | `seeded_regression C-002@11` |
+| Triệu chứng | Grader Lab 8 báo `FAIL (status resolved != denied)`. Reply nói "Dạ, LogiX đã hoàn 20.000đ cho đơn O-202." và ledger ghi `refund_vnd=20000`, `refund_count=1` trong khi nhãn kỳ vọng là `status=denied`, `refund_vnd=0`. |
+| Bước sai đầu tiên | Event 3: `model_override {"delay_days": 5}` dẫn tới Event 4: `quote {"amount_vnd": 20000, "reason": "entitled", "clause_ids": ["SHIP-LATE-03"]}` |
+| Vì sao là bước *đầu tiên* | Event 1 (handoff) và Event 2 (investigator lookup_order đơn O-202) hoàn toàn hợp lệ, thông tin đơn hàng đúng thực tế. Bắt đầu từ Event 3 xuất hiện ghi đè ngày trễ sai lệch so với điều khoản chính sách. |
+| Failure mode | `FM-02` (ignore_denied / bypass policy) |
+| Đối chứng | Cùng claim@seed trên shape `fixed`: không có `model_override`. Event 3 là `quote {"amount_vnd": 0, "reason": "no_entitlement"}` và trả về status `denied` chuẩn xác. |
+| Regression test | Viết assertion kiểm tra quyết định của agent: `assert decision["status"] == "denied"` và `assert ledger["refund_vnd"] == 0` cho claim C-002. Test này fail trên `seeded_regression` và pass trên `fixed`. |
+| Chưa chắc chắn | Trace chỉ thể hiện event `model_override` can thiệp vào facts nhưng không giải thích prompt nội bộ hay reasoning nào đã kích hoạt override này. |
 
 ## Quy tắc
 
